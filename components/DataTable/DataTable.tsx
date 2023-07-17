@@ -7,10 +7,11 @@ interface DataTableProps {
   data: any[];
 }
 
+
 const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [currentItems,setCurrentItems] = useState<any[]>([])
+  const [currentItems, setCurrentItems] = useState<any[]>([])
   const [sortKey, setSortKey] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -18,22 +19,39 @@ const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
   const itemsPerPage = 5;
 
   // Search Logic
-  const filteredData = data.filter((item) =>
-    headers.some((header) =>
-      item[header.key].toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // const filteredData = data.filter((item) =>
+  //   headers.some((header) =>
+  //     item[header.key].toString().toLowerCase().includes(searchTerm.toLowerCase())
+  //   )
+  // );
 
   useEffect(() => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    setCurrentItems(filteredData.slice(indexOfFirstItem, indexOfLastItem));
-  },[currentPage,filteredData]);
+    const slicedItems = data.slice(indexOfFirstItem, indexOfLastItem);
+      if (JSON.stringify(currentItems) !== JSON.stringify(slicedItems)) {
+      setCurrentItems(slicedItems);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    console.log(currentItems)
+  },[currentItems])
+
+  const handleSort = (key: string, order: 'asc' | 'desc') => {
+    console.log('sorting')
+    setSortKey(key);
+    setSortDirection(order);
+    const sortedItems = [...currentItems];
+    sortedItems.sort((a, b) => {
+      if (a[key] < b[key]) return order === 'asc' ? -1 : 1;
+      else return order === 'asc' ? 1 : -1;
+    });
+    setCurrentItems(sortedItems);
+  };
 
 
 
-
-  
   // Handle pagination page change
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -56,7 +74,16 @@ const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
                 <IconButton
                   aria-label={`Sort ${sortDirection}`}
                   size="xs"
-                  icon={sortDirection === 'asc' ? <ChevronUpIcon color="black" /> : <ChevronDownIcon color="black" />}
+                  icon={sortKey === key ? sortDirection === 'asc'
+                  ?<ChevronDownIcon color="black"  />
+                    : <ChevronUpIcon color="black"  />
+                   : <ChevronUpIcon color="black"  />}
+                   onClick={() => {
+                    sortKey === key ? sortDirection === 'asc' ?
+                    handleSort(key, 'desc') :
+                    handleSort(key,'asc') :
+                    handleSort(key,'asc')
+                  }}
                 />
               </Th>
             ))}
@@ -75,7 +102,7 @@ const DataTable: React.FC<DataTableProps> = ({ headers, data }) => {
       {/* Pagination */}
       <Box mt={4}>
         <span>Page: </span>
-        {Array(Math.ceil(filteredData.length / itemsPerPage))
+        {Array(Math.ceil(data.length / itemsPerPage))
           .fill(null)
           .map((_, index) => (
             <button key={index} onClick={() => handlePageChange(index + 1)}>
